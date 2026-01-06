@@ -19,7 +19,7 @@ const server = http.createServer(app);
 // Middleware
 app.use(
   cors({
-    origin: CLIENT_URL,
+    origin: "https://viby-chat-app.vercel.app",
     methods: ["GET,HEAD,PUT,PATCH,POST,DELETE"],
     credentials: true,
   })
