@@ -398,7 +398,7 @@ export default function VideoPlayer({
 
   const currentVideo = videos[currentIndex];
   const progressPercentage = isDemoMode
-    ? (currentTime / ((getVideoDuration(currentVideo) || 60))) * 100
+    ? (currentTime / (getVideoDuration(currentVideo) || 60)) * 100
     : duration > 0
     ? (currentTime / duration) * 100
     : 0;
@@ -668,7 +668,7 @@ export default function VideoPlayer({
               <span className="text-white text-sm sm:text-lg font-medium">
                 {formatTime(currentTime)} /{" "}
                 {formatTime(
-                  isDemoMode ? (getVideoDuration(currentVideo) || 60) : duration
+                  isDemoMode ? getVideoDuration(currentVideo) || 60 : duration
                 )}
               </span>
             </div>
@@ -721,7 +721,7 @@ export default function VideoPlayer({
               {isValidVideoUrl(getVideoUrl(video) || "") ? (
                 <img
                   src={
-                    ((video as Media).thumbnail_url) ||
+                    (video as Media).thumbnail_url ||
                     "/placeholder.svg?height=64&width=64&query=video+thumbnail"
                   }
                   alt={`Video ${index + 1}`}

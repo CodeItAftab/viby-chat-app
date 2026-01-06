@@ -126,7 +126,7 @@ export default function ImageViewer({
     try {
       const item = images[currentIndex];
       if (!item) return;
-      
+
       if (item instanceof File) {
         // Handle File type
         const url = window.URL.createObjectURL(item);
