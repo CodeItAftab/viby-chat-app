@@ -124,17 +124,35 @@ export default function ImageViewer({
 
   const handleDownload = async () => {
     try {
-      const response = await fetch(images[currentIndex].url);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download =
-        images[currentIndex].name || `image-${currentIndex + 1}.jpg`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      const item = images[currentIndex];
+      if (!item) return;
+      
+      if (item instanceof File) {
+        // Handle File type
+        const url = window.URL.createObjectURL(item);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = item.name || `image-${currentIndex + 1}.jpg`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } else {
+        // Handle Media type
+        const mediaItem = item as Media;
+        if (mediaItem.url) {
+          const response = await fetch(mediaItem.url);
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = mediaItem.name || `image-${currentIndex + 1}.jpg`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+        }
+      }
     } catch (error) {
       console.error("Download failed:", error);
     }

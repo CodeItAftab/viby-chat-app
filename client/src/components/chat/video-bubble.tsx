@@ -342,7 +342,7 @@ export default function VideoBubble({ message }: VideoBubbleProps) {
       {/* Video Viewer */}
       {selectedVideoIndex !== null && (
         <VideoPlayer
-          videos={media}
+          videos={media ?? []}
           initialIndex={selectedVideoIndex}
           isOpen={selectedVideoIndex !== null}
           onClose={closeVideoViewer}

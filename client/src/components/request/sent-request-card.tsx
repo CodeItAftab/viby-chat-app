@@ -57,7 +57,7 @@ export function SentRequestCard({ request }: SentRequestCardProps) {
           <RequestCardHeader
             name={request.receiver!.name}
             timestamp={`Sent ${formatRelativeTime(
-              getISOString(request.createdAt)
+              getISOString(request.createdAt) || ""
             )}`}
             badge={statusBadge}
           />

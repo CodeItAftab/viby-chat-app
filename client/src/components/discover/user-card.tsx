@@ -29,7 +29,7 @@ export interface User {
   location?: string;
   type?: "user" | "friend" | "sent_req" | "req";
   age?: number;
-  dob?: Date;
+  dob?: string | Date;
   requestId?: string;
   chatId?: string;
 }

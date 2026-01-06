@@ -13,6 +13,8 @@ interface ChatListHeaderProps {
   profileData?: { name: string; email: string; status: string };
   onNotificationsClick?: () => void;
   onProfileClick?: () => void;
+  notificationSettings?: boolean;
+  onNotificationSettingsChange?: () => void;
 }
 
 export function ChatListHeader({

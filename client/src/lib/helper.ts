@@ -48,7 +48,10 @@ export const formatRelativeTime = (isoString: string | Date): string => {
  * @param dateValue - Date object or ISO string
  * @returns ISO string
  */
-export const getISOString = (dateValue: string | Date): string => {
+export const getISOString = (dateValue: string | Date | undefined): string | undefined => {
+  if (!dateValue) {
+    return undefined;
+  }
   if (typeof dateValue === "string") {
     return dateValue;
   }

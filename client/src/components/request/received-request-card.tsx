@@ -65,7 +65,7 @@ export function ReceivedRequestCard({ request }: ReceivedRequestCardProps) {
         <RequestCardContent>
           <RequestCardHeader
             name={request.sender!.name}
-            timestamp={formatRelativeTime(getISOString(request.createdAt))}
+            timestamp={formatRelativeTime(getISOString(request.createdAt) || "")}
             badge={statusBadge}
             // mutualFriends={request.mutualFriends}
           />

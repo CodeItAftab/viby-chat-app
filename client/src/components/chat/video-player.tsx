@@ -41,8 +41,8 @@ export default function VideoPlayer({
   const [buffered, setBuffered] = useState(0);
   const [isUserInteracting, setIsUserInteracting] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const controlsTimeoutRef = useRef<NodeJS.Timeout>();
-  const progressAnimationRef = useRef<number>();
+  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const progressAnimationRef = useRef<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const isValidVideoUrl = (url: string) => {
@@ -51,6 +51,16 @@ export default function VideoPlayer({
       !url.includes("placeholder.svg") &&
       (url.includes(".mp4") || url.includes(".webm") || url.includes(".mov"))
     );
+  };
+
+  const getVideoUrl = (video: Media | File): string | undefined => {
+    if (video instanceof File) return undefined; // Files don't have url
+    return (video as Media).url;
+  };
+
+  const getVideoDuration = (video: Media | File): number | undefined => {
+    if (video instanceof File) return undefined; // Files don't have duration
+    return (video as Media).duration;
   };
 
   useEffect(() => {
@@ -62,7 +72,7 @@ export default function VideoPlayer({
     setBuffered(0);
     setShowControls(true);
     setIsUserInteracting(false);
-    setIsDemoMode(!isValidVideoUrl(videos[initialIndex]?.url));
+    setIsDemoMode(!isValidVideoUrl(getVideoUrl(videos[initialIndex]) || ""));
   }, [initialIndex, isOpen]);
 
   useEffect(() => {
@@ -154,7 +164,7 @@ export default function VideoPlayer({
     setBuffered(0);
     setShowControls(true);
     setIsUserInteracting(false);
-    setIsDemoMode(!isValidVideoUrl(videos[newIndex]?.url));
+    setIsDemoMode(!isValidVideoUrl(getVideoUrl(videos[newIndex]) || ""));
   }, [videos, currentIndex]);
 
   const goToNext = useCallback(() => {
@@ -167,7 +177,7 @@ export default function VideoPlayer({
     setBuffered(0);
     setShowControls(true);
     setIsUserInteracting(false);
-    setIsDemoMode(!isValidVideoUrl(videos[newIndex]?.url));
+    setIsDemoMode(!isValidVideoUrl(getVideoUrl(videos[newIndex]) || ""));
   }, [videos, currentIndex]);
 
   const togglePlayPause = useCallback(() => {
@@ -274,7 +284,7 @@ export default function VideoPlayer({
     if (isDemoMode) {
       const rect = e.currentTarget.getBoundingClientRect();
       const clickX = e.clientX - rect.left;
-      const videoDuration = videos[currentIndex].duration || 60;
+      const videoDuration = getVideoDuration(videos[currentIndex]) || 60;
       const newTime = (clickX / rect.width) * videoDuration;
       setCurrentTime(newTime);
       return;
@@ -315,17 +325,22 @@ export default function VideoPlayer({
     if (isDemoMode) return;
 
     try {
-      const response = await fetch(videos[currentIndex].url);
+      const videoUrl = getVideoUrl(videos[currentIndex]);
+      if (!videoUrl) {
+        setHasError(true);
+        return;
+      }
+      const response = await fetch(videoUrl);
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
-      link.href = url;
+      link.href = downloadUrl;
       link.download =
         videos[currentIndex].name || `video-${currentIndex + 1}.mp4`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      window.URL.revokeObjectURL(downloadUrl);
     } catch (error) {
       console.error("Download failed:", error);
     }
@@ -336,7 +351,7 @@ export default function VideoPlayer({
     if (isDemoMode && isPlaying) {
       const startTime = Date.now();
       const initialTime = currentTime;
-      const maxTime = videos[currentIndex].duration || 60;
+      const maxTime = getVideoDuration(videos[currentIndex]) || 60;
 
       const animate = () => {
         const elapsed = (Date.now() - startTime) / 1000;
@@ -383,7 +398,7 @@ export default function VideoPlayer({
 
   const currentVideo = videos[currentIndex];
   const progressPercentage = isDemoMode
-    ? (currentTime / (currentVideo.duration || 60)) * 100
+    ? (currentTime / ((getVideoDuration(currentVideo) || 60))) * 100
     : duration > 0
     ? (currentTime / duration) * 100
     : 0;
@@ -516,7 +531,7 @@ export default function VideoPlayer({
 
           <video
             ref={videoRef}
-            src={currentVideo.url}
+            src={getVideoUrl(currentVideo) || undefined}
             className={`w-full h-full max-w-full max-h-full object-contain transition-all duration-500 ease-out ${
               isLoading || hasError
                 ? "opacity-0 scale-95"
@@ -653,7 +668,7 @@ export default function VideoPlayer({
               <span className="text-white text-sm sm:text-lg font-medium">
                 {formatTime(currentTime)} /{" "}
                 {formatTime(
-                  isDemoMode ? currentVideo.duration || 60 : duration
+                  isDemoMode ? (getVideoDuration(currentVideo) || 60) : duration
                 )}
               </span>
             </div>
@@ -695,7 +710,7 @@ export default function VideoPlayer({
                 setBuffered(0);
                 setShowControls(true);
                 setIsUserInteracting(false);
-                setIsDemoMode(!isValidVideoUrl(video.url));
+                setIsDemoMode(!isValidVideoUrl(getVideoUrl(video) || ""));
               }}
               className={`relative w-12 h-12 sm:w-16 sm:h-16 rounded-lg sm:rounded-xl overflow-hidden transition-all duration-300 ease-out flex-shrink-0 ${
                 index === currentIndex
@@ -703,10 +718,10 @@ export default function VideoPlayer({
                   : "opacity-70 hover:opacity-100 hover:scale-105"
               }`}
             >
-              {isValidVideoUrl(video.url) ? (
+              {isValidVideoUrl(getVideoUrl(video) || "") ? (
                 <img
                   src={
-                    video.thumbnail_url ||
+                    ((video as Media).thumbnail_url) ||
                     "/placeholder.svg?height=64&width=64&query=video+thumbnail"
                   }
                   alt={`Video ${index + 1}`}
