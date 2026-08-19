@@ -20,7 +20,7 @@ interface FileBubbleProps {
 
 export default function FileBubble({ message }: FileBubbleProps) {
   const [downloadingFiles, setDownloadingFiles] = useState<Set<number>>(
-    new Set()
+    new Set(),
   );
 
   if (message.type !== "file" || !message.media || message.media.length === 0) {
@@ -187,7 +187,14 @@ export default function FileBubble({ message }: FileBubbleProps) {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Download failed:", error);
-      alert("Failed to download file");
+      const link = document.createElement("a");
+      link.href = file.url;
+      link.download = file.name || `file-${Date.now()}`;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     } finally {
       setDownloadingFiles((prev) => {
         const newSet = new Set(prev);
@@ -200,7 +207,7 @@ export default function FileBubble({ message }: FileBubbleProps) {
   return (
     <div className={`flex ${is_sender ? "justify-end" : "justify-start"} mb-2`}>
       <div
-        className={`relative max-w-xs shadow-lg transition-all duration-300 hover:shadow-xl ${
+        className={`relative w-[min(82vw,24rem)] max-w-full rounded-2xl shadow-lg transition-all duration-300 hover:shadow-xl ${
           is_sender
             ? "bg-gradient-to-br from-blue-500 to-blue-600 rounded-l-2xl rounded-br-2xl rounded-tr-md"
             : "bg-white border border-gray-200 rounded-r-2xl rounded-bl-2xl rounded-tl-md"
@@ -227,7 +234,7 @@ export default function FileBubble({ message }: FileBubbleProps) {
                 <div
                   className={`p-2.5 rounded-lg transition-all duration-200 ${getFileTypeColor(
                     fileName,
-                    fileFormat
+                    fileFormat,
                   )}`}
                 >
                   {getFileIcon(fileName, fileFormat)}
@@ -257,11 +264,7 @@ export default function FileBubble({ message }: FileBubbleProps) {
                 {/* Download Button */}
                 <button
                   onClick={() => {
-                    if (
-                      "url" in file &&
-                      "public_id" in file &&
-                      "resource_type" in file
-                    ) {
+                    if ("url" in file && typeof file.url === "string") {
                       handleDownload(file as Media, index);
                     } else {
                       alert("This file cannot be downloaded.");

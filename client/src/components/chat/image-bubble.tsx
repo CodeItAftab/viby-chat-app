@@ -1,4 +1,4 @@
-import type { Message } from "@/types/message";
+import type { Media, Message } from "@/types/message";
 import { Check, CheckCheck, Clock, Download } from "lucide-react";
 import { useState } from "react";
 import ImageViewer from "./image-viewer";
@@ -11,7 +11,7 @@ interface ImageBubbleProps {
 
 export default function ImageBubble({ message }: ImageBubbleProps) {
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(
-    null
+    null,
   );
 
   const { media, is_sender, timestamp, state, text_content } = message;
@@ -23,6 +23,8 @@ export default function ImageBubble({ message }: ImageBubbleProps) {
   ) {
     return;
   }
+
+  const imageMedia = media as (Media | File)[];
 
   const formatTime = (date: Date | string) => {
     if (typeof date === "string") {
@@ -50,6 +52,37 @@ export default function ImageBubble({ message }: ImageBubbleProps) {
     }
   };
 
+  const handleDownload = async (
+    image: Media | File,
+    event: React.MouseEvent<HTMLButtonElement>,
+  ) => {
+    event.stopPropagation();
+    if (!("url" in image) || typeof image.url !== "string") return;
+
+    try {
+      const response = await fetch(image.url);
+      if (!response.ok) throw new Error("Download failed");
+      const blobUrl = URL.createObjectURL(await response.blob());
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = image.name || `image-${Date.now()}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Image download failed:", error);
+      const link = document.createElement("a");
+      link.href = image.url;
+      link.download = image.name || `image-${Date.now()}.jpg`;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
   const renderImageGrid = () => {
     if ((media?.length ?? 0) === 1) {
       return (
@@ -67,14 +100,19 @@ export default function ImageBubble({ message }: ImageBubbleProps) {
             }
             alt="Shared image"
             loading="lazy"
-            className="w-full bg-white h-auto max-h-80 object-cover rounded-lg"
+            className="aspect-[4/3] h-auto max-h-80 w-full rounded-lg bg-white object-cover"
           />
 
           {/* Gradient overlay for timestamp visibility */}
           <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/50 to-transparent pointer-events-none rounded-b-lg" />
 
           {/* Download button */}
-          <button className="absolute top-2 right-2 p-2 bg-black/40 backdrop-blur-sm rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-black/60">
+          <button
+            type="button"
+            aria-label="Download image"
+            onClick={(event) => handleDownload(imageMedia[0], event)}
+            className="absolute right-2 top-2 rounded-full bg-black/50 p-2 text-white opacity-100 backdrop-blur-sm transition-all duration-200 hover:bg-black/70 sm:opacity-0 sm:group-hover:opacity-100"
+          >
             <Download className="h-4 w-4 text-white" />
           </button>
 
@@ -257,13 +295,9 @@ export default function ImageBubble({ message }: ImageBubbleProps) {
             //   ? "rounded-2xl"
             //   :
             is_sender
-              ? "chat-bubble-right rounded-l-2xl rounded-br-2xl rounded-tr-md"
-              : "chat-bubble-left rounded-r-2xl rounded-bl-2xl rounded-tl-md"
-          } relative max-w-xs shadow-sm overflow-hidden ${
-            is_sender
-              ? "bg-gradient-to-br from-blue-500 to-blue-600"
-              : "bg-white border border-gray-200"
-          }`}
+              ? "rounded-br-md bg-gradient-to-br from-blue-500 to-blue-600"
+              : "rounded-bl-md border border-gray-200 bg-white"
+          } relative w-[min(82vw,24rem)] max-w-full overflow-hidden rounded-2xl shadow-sm`}
         >
           <div className="p-1.5">{renderImageGrid()}</div>
 

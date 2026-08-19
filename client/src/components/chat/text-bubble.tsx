@@ -41,35 +41,28 @@ export default function TextBubble({ message }: TextBubbleProps) {
         message.is_sender ? "justify-end" : "justify-start"
       } mb-1`}
     >
-      <div
-        className={`relative max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl`}
-      >
+      <div className="max-w-[min(82vw,36rem)]">
         <div
           className={`
-            relative px-3 py-2 rounded-lg shadow-sm
+            relative rounded-2xl px-3 py-2 shadow-sm
             ${
               message.is_sender
-                ? "bg-blue-600 text-white removed-chat-bubble-right"
-                : "bg-white text-gray-800 border border-gray-100 removed-chat-bubble-left"
+                ? "rounded-br-md bg-blue-600 text-white"
+                : "rounded-bl-md border border-gray-100 bg-white text-gray-800"
             }
           `}
         >
-          <div className="relative">
-            <span className="text-sm leading-relaxed break-words pr-19">
+          <div className="flex items-end gap-2">
+            <span className="min-w-0 flex-1 break-words text-sm leading-relaxed">
               {message.text_content}
             </span>
 
-            {/* Inline timestamp and status - positioned absolutely */}
             <span
-              className={`
-                absolute bottom-0 right-0 flex items-center space-x-1 text-[12px] shrink-0 w-fit
-                ${message.is_sender ? "text-white/80" : "text-gray-500"}
-                ml-2 pl-2
-              `}
+              className={`flex shrink-0 items-center gap-1 text-[11px] ${
+                message.is_sender ? "text-white/80" : "text-gray-500"
+              }`}
             >
-              <span className="shrink-o w-fit">
-                {formatTime(message.timestamp)}
-              </span>
+              <span>{formatTime(message.timestamp)}</span>
               {message.is_sender && message.state && getStatusIcon()}
             </span>
           </div>

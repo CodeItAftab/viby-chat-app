@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ArrowLeft, Phone, Video, MoreVertical } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavigate, useParams } from "react-router-dom";
 import { useCallback, useEffect } from "react";
@@ -58,7 +58,7 @@ const ChatViewHeader = () => {
                   "w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full transition-all duration-300",
                   chat?.online
                     ? "bg-emerald-500 shadow-emerald-500/50 shadow-sm"
-                    : "bg-slate-400"
+                    : "bg-slate-400",
                 )}
               />
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 truncate">
@@ -79,29 +79,6 @@ const ChatViewHeader = () => {
               </p>
             </div>
           </div>
-        </div>
-        <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="hidden sm:flex h-8 w-8 sm:h-10 sm:w-10 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors rounded-xl group"
-          >
-            <Phone className="h-4 w-4 sm:h-5 sm:w-5 text-slate-600 dark:text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="hidden sm:flex h-8 w-8 sm:h-10 sm:w-10 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors rounded-xl group"
-          >
-            <Video className="h-4 w-4 sm:h-5 sm:w-5 text-slate-600 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 sm:h-10 sm:w-10 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors rounded-xl"
-          >
-            <MoreVertical className="h-4 w-4 sm:h-5 sm:w-5 text-slate-600 dark:text-slate-400" />
-          </Button>
         </div>
       </div>
     </div>

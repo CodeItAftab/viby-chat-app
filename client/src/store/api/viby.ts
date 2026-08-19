@@ -8,6 +8,8 @@ import {
 } from "@reduxjs/toolkit/query/react";
 import type { FriendRequest, User } from "@/types";
 import type { Chat, Media, Message } from "@/types/message";
+import { logout } from "@/store/slices/auth";
+import { clearClientSession } from "@/lib/session";
 
 interface SuggestedUsersResponse {
   success: boolean;
@@ -43,7 +45,7 @@ interface GetFriendRequestsResponse {
 
 // Video processing utilities
 const getVideoMetadata = (
-  file: File
+  file: File,
 ): Promise<{
   width: number;
   height: number;
@@ -76,7 +78,7 @@ const getVideoMetadata = (
 
 const generateVideoThumbnail = (
   file: File,
-  timeOffset: number = 1
+  timeOffset: number = 1,
 ): Promise<string> => {
   return new Promise((resolve, reject) => {
     const video = document.createElement("video");
@@ -126,8 +128,8 @@ const baseQueryWithReauth: BaseQueryFn<
 
   if (result.error && result.error.status === 401) {
     console.log(result);
-    // I want to logout here
-    api.dispatch({ type: "auth/logout" });
+    api.dispatch(logout());
+    clearClientSession();
   }
 
   return result;
@@ -170,8 +172,8 @@ const vibyApi = createApi({
             (draft) => {
               const user = draft.find((u) => u._id === userId);
               if (user) user.type = "sent_req";
-            }
-          )
+            },
+          ),
         );
 
         const patchSent = dispatch(
@@ -188,8 +190,8 @@ const vibyApi = createApi({
                   username: "",
                 },
               });
-            }
-          )
+            },
+          ),
         );
 
         const searchPatches: Array<{ undo: () => void }> = [];
@@ -211,8 +213,8 @@ const vibyApi = createApi({
                     (draft) => {
                       const user = draft.find((u) => u._id === userId);
                       if (user) user.type = "sent_req";
-                    }
-                  )
+                    },
+                  ),
                 );
                 searchPatches.push(patch);
               }
@@ -230,11 +232,11 @@ const vibyApi = createApi({
                 undefined,
                 (draft) => {
                   const user = draft.find(
-                    (u) => u._id === data.request?.receiver._id
+                    (u) => u._id === data.request?.receiver._id,
                   );
                   if (user && data.request) user.requestId = data.request._id;
-                }
-              )
+                },
+              ),
             );
 
             dispatch(
@@ -243,7 +245,7 @@ const vibyApi = createApi({
                 undefined,
                 (draft) => {
                   const index = draft.findIndex(
-                    (r) => r._id === "temp-" + userId
+                    (r) => r._id === "temp-" + userId,
                   );
                   if (index !== -1 && data.request) {
                     draft[index] = {
@@ -252,8 +254,8 @@ const vibyApi = createApi({
                       receiver: data.request.receiver,
                     };
                   }
-                }
-              )
+                },
+              ),
             );
 
             if (searchQueries) {
@@ -268,12 +270,12 @@ const vibyApi = createApi({
                         searchTerm,
                         (draft) => {
                           const user = draft.find(
-                            (u) => u._id === data.request?.receiver._id
+                            (u) => u._id === data.request?.receiver._id,
                           );
                           if (user && data.request)
                             user.requestId = data.request._id;
-                        }
-                      )
+                        },
+                      ),
                     );
                   }
                 }
@@ -304,8 +306,8 @@ const vibyApi = createApi({
                 user.type = "user";
                 delete user.requestId;
               }
-            }
-          )
+            },
+          ),
         );
 
         const patchSent = dispatch(
@@ -315,8 +317,8 @@ const vibyApi = createApi({
             (draft) => {
               const index = draft.findIndex((r) => r._id === requestId);
               if (index !== -1) draft.splice(index, 1);
-            }
-          )
+            },
+          ),
         );
 
         const searchPatches: Array<{ undo: () => void }> = [];
@@ -341,8 +343,8 @@ const vibyApi = createApi({
                         user.type = "user";
                         delete user.requestId;
                       }
-                    }
-                  )
+                    },
+                  ),
                 );
                 searchPatches.push(patch);
               }
@@ -389,8 +391,8 @@ const vibyApi = createApi({
             (draft) => {
               const index = draft.findIndex((r) => r._id === requestId);
               if (index !== -1) draft.splice(index, 1);
-            }
-          )
+            },
+          ),
         );
 
         try {
@@ -403,8 +405,8 @@ const vibyApi = createApi({
                 undefined,
                 (draft: User[]) => {
                   draft.push(data.friend);
-                }
-              )
+                },
+              ),
             );
           }
         } catch {
@@ -429,8 +431,8 @@ const vibyApi = createApi({
             (draft) => {
               const index = draft.findIndex((r) => r._id === requestId);
               if (index !== -1) draft.splice(index, 1);
-            }
-          )
+            },
+          ),
         );
 
         const patchSuggested = dispatch(
@@ -443,8 +445,8 @@ const vibyApi = createApi({
                 user.type = "user";
                 delete user.requestId;
               }
-            }
-          )
+            },
+          ),
         );
 
         try {
@@ -588,64 +590,24 @@ const vibyApi = createApi({
 
         const tempId = `temp-${Date.now()}`;
 
-        // Process media files with metadata extractions
-        const previewMedia: (Media & {
-          width?: number;
-          height?: number;
-          duration?: number;
-          aspectRatio?: number;
-          thumbnail_url?: string;
-        })[] = await Promise.all(
-          mediaFiles.map(async (file, index) => {
-            let resourceType: "image" | "video" | "file" | "audio" = "file";
-            const typePart = file.type.split("/")[0];
+        // Create local previews synchronously so media messages appear immediately.
+        const previewMedia: Media[] = mediaFiles.map((file, index) => {
+          const typePart = file.type.split("/")[0];
+          const resourceType: Media["resource_type"] =
+            typePart === "image" || typePart === "video" || typePart === "audio"
+              ? typePart
+              : "file";
 
-            if (
-              typePart === "image" ||
-              typePart === "video" ||
-              typePart === "audio"
-            ) {
-              resourceType = typePart as typeof resourceType;
-            }
-
-            const baseMedia: Media = {
-              url: URL.createObjectURL(file),
-              // type: file.type.startsWith("image")
-              //   ? "image"
-              //   : file.type.startsWith("video")
-              //   ? "video"
-              //   : "file",
-              _id: `temp-media-${tempId}-${index}`,
-              public_id: `temp-public-id-${tempId}-${index}`,
-              resource_type: resourceType,
-              bytes: file.size,
-              name: file.name,
-              duration: parseFloat(duration) || 0,
-            };
-
-            // Extract video metadata if it's a video file
-            if (file.type.startsWith("video/")) {
-              try {
-                const metadata = await getVideoMetadata(file);
-                const thumbnailUrl = await generateVideoThumbnail(file, 1);
-
-                return {
-                  ...baseMedia,
-                  width: metadata.width,
-                  height: metadata.height,
-                  duration: metadata.duration,
-                  aspectRatio: metadata.aspectRatio,
-                  thumbnail_url: thumbnailUrl,
-                };
-              } catch (error) {
-                console.warn("Failed to extract video metadata:", error);
-                return baseMedia;
-              }
-            }
-
-            return baseMedia;
-          })
-        );
+          return {
+            url: URL.createObjectURL(file),
+            _id: `temp-media-${tempId}-${index}`,
+            public_id: `temp-public-id-${tempId}-${index}`,
+            resource_type: resourceType,
+            bytes: file.size,
+            name: file.name,
+            duration: parseFloat(duration) || 0,
+          };
+        });
 
         const optimisticMessage: Message = {
           _id: tempId,
@@ -663,7 +625,7 @@ const vibyApi = createApi({
         const patch = dispatch(
           vibyApi.util.updateQueryData("getMessages", chatId, (draft) => {
             draft.push(optimisticMessage);
-          })
+          }),
         );
 
         const chatPatchs = dispatch(
@@ -723,7 +685,7 @@ const vibyApi = createApi({
               // This will ensure that the chat is created with the correct last message
               if (!draft.some((c) => c._id === chatId)) {
                 dispatch(
-                  vibyApi.util.invalidateTags([{ type: "Chats", id: "LIST" }])
+                  vibyApi.util.invalidateTags([{ type: "Chats", id: "LIST" }]),
                 );
               }
             }
@@ -734,7 +696,7 @@ const vibyApi = createApi({
               const bTime = new Date(b.last_message?.timestamp || 0).getTime();
               return bTime - aTime; // sort descending
             });
-          })
+          }),
         );
 
         try {
@@ -745,16 +707,25 @@ const vibyApi = createApi({
             vibyApi.util.updateQueryData("getMessages", chatId, (draft) => {
               const index = draft.findIndex((m) => m._id === tempId);
               if (index !== -1) {
+                const optimisticMessage = draft[index];
+                const confirmedMedia = data.media as Media[] | undefined;
+                const hasConfirmedMedia = Boolean(confirmedMedia?.length);
                 draft[index] = {
+                  ...optimisticMessage,
                   ...data,
+                  _id: tempId,
                   is_sender: true,
+                  type: data.type || optimisticMessage.type,
+                  media: hasConfirmedMedia
+                    ? confirmedMedia
+                    : optimisticMessage.media,
                   state:
-                    draft[index].state === "read"
-                      ? draft[index].state
-                      : data.state, // Update state to sent
+                    optimisticMessage.state === "read"
+                      ? optimisticMessage.state
+                      : data.state || optimisticMessage.state,
                 };
               }
-            })
+            }),
           );
 
           // Update chat with the new message
@@ -763,9 +734,12 @@ const vibyApi = createApi({
               const chatIndex = draft.findIndex((c) => c._id === chatId);
               if (chatIndex !== -1) {
                 const chat = draft[chatIndex];
+                const chatMedia = (data.media as Media[] | undefined)?.length
+                  ? (data.media as Media[])
+                  : previewMedia;
                 chat.last_message = {
                   text_content: text,
-                  media: previewMedia,
+                  media: chatMedia,
                   sender: data.sender,
                   state:
                     chat.last_message && chat.last_message.state === "read"
@@ -779,23 +753,20 @@ const vibyApi = createApi({
               // sort chats by last message timestamp
               draft.sort((a, b) => {
                 const aTime = new Date(
-                  a.last_message?.timestamp || 0
+                  a.last_message?.timestamp || 0,
                 ).getTime();
                 const bTime = new Date(
-                  b.last_message?.timestamp || 0
+                  b.last_message?.timestamp || 0,
                 ).getTime();
                 return bTime - aTime; // sort descending
               });
-            })
+            }),
           );
 
-          // Revoke blob URLs to clean up memory
-          previewMedia.forEach((m) => {
-            URL.revokeObjectURL(m.url);
-            if (m.thumbnail_url && m.thumbnail_url.startsWith("data:")) {
-              // Thumbnail is a data URL, no need to revoke
-            }
-          });
+          // Release local preview URLs only after the server returned media.
+          if (data.media?.length) {
+            previewMedia.forEach((m) => URL.revokeObjectURL(m.url));
+          }
         } catch {
           patch.undo();
           chatPatchs.undo();
@@ -831,7 +802,7 @@ const vibyApi = createApi({
                 msg.state = "read";
               }
             });
-          })
+          }),
         );
 
         const chatPatch = dispatch(
@@ -841,7 +812,7 @@ const vibyApi = createApi({
               chat.last_message.state = "read";
               chat.unread_count = 0; // Reset unread count
             }
-          })
+          }),
         );
 
         try {

@@ -40,7 +40,7 @@ export function MessageInput({
   const [isFile, setIsFile] = useState(false);
   const { chatId } = useParams<{ chatId: string }>();
   const [sendMessage] = useSendMessageMutation();
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { socket } = useSocket();
 
   const handleSend = async () => {
@@ -58,8 +58,8 @@ export function MessageInput({
         isFile
           ? "file"
           : selectedFiles.length > 0
-          ? selectedFiles[0].type.split("/")[0]
-          : "text"
+            ? selectedFiles[0].type.split("/")[0]
+            : "text",
       );
       selectedFiles.forEach((file) => {
         formData.append("media", file);
@@ -67,6 +67,10 @@ export function MessageInput({
 
       setSelectedFiles([]);
       setMessage("");
+      if (textareaRef.current) {
+        textareaRef.current.style.height = "36px";
+        textareaRef.current.style.overflowY = "hidden";
+      }
       setShowFileUpload(false); // Move here
       setShowAudioRecorder(false);
       setIsFile(false);
@@ -79,6 +83,25 @@ export function MessageInput({
 
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setMessage(e.target.value);
+    const compactHeight = 36;
+    const singleLineLimit = 40;
+    const maxHeight = 108;
+
+    e.target.style.height = `${compactHeight}px`;
+    const contentHeight = e.target.scrollHeight;
+    const shouldGrow = contentHeight > singleLineLimit;
+
+    e.target.style.height = `${shouldGrow ? Math.min(contentHeight, maxHeight) : compactHeight}px`;
+    e.target.style.overflowY = contentHeight > maxHeight ? "auto" : "hidden";
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    handleKeyPress();
+
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      void handleSend();
+    }
   };
 
   const handleFileSelect = (files: File[]) => {
@@ -194,7 +217,7 @@ export function MessageInput({
     <div
       className={cn(
         "border-t border-blue-200/50 dark:border-blue-800/50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl",
-        className
+        className,
       )}
     >
       {/* File Upload Panel */}
@@ -296,20 +319,20 @@ export function MessageInput({
 
       {/* Message Input - Fixed height with hidden scrollbar */}
 
-      <div className="flex items-end gap-3 p-4">
+      <div className="flex items-end gap-2 p-2 sm:gap-3 sm:px-4 sm:py-3">
         {/* Action Buttons */}
         <div className="flex items-center flex-shrink-0">
-          <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-full p-1 shadow-sm">
+          <div className="flex items-center rounded-full bg-slate-100 p-0.5 shadow-sm dark:bg-slate-800">
             <Button
               type="button"
               variant="ghost"
               size="icon"
               onClick={toggleFileUpload}
               className={cn(
-                "h-9 w-9 rounded-full transition-all duration-200",
+                "h-8 w-8 rounded-full transition-all duration-200",
                 showFileUpload
                   ? "bg-blue-600 text-white shadow-lg"
-                  : "hover:bg-blue-100 dark:hover:bg-blue-900/50 text-slate-600 dark:text-slate-400"
+                  : "hover:bg-blue-100 dark:hover:bg-blue-900/50 text-slate-600 dark:text-slate-400",
               )}
             >
               {showFileUpload ? (
@@ -324,10 +347,10 @@ export function MessageInput({
               size="icon"
               onClick={toggleAudioRecorder}
               className={cn(
-                "h-9 w-9 rounded-full transition-all duration-200",
+                "h-8 w-8 rounded-full transition-all duration-200",
                 showAudioRecorder || isRecording
                   ? "bg-red-500 text-white shadow-lg"
-                  : "hover:bg-red-100 dark:hover:bg-red-900/50 text-slate-600 dark:text-slate-400"
+                  : "hover:bg-red-100 dark:hover:bg-red-900/50 text-slate-600 dark:text-slate-400",
               )}
             >
               <Mic className="h-4 w-4" />
@@ -337,16 +360,16 @@ export function MessageInput({
 
         {/* Text Input Container - Fixed height with hidden scrollbar */}
         <div className="flex-1 min-w-0 relative">
-          <div className="relative bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-200 shadow-sm hover:shadow-md">
+          <div className="relative rounded-xl border border-slate-200 bg-slate-50 shadow-sm transition-all duration-200 hover:border-slate-300 hover:shadow-md dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600">
             <textarea
               ref={textareaRef}
               value={message}
               onChange={handleInput}
-              onKeyDown={handleKeyPress}
               placeholder={
                 selectedFiles.length > 0 ? "Add a caption..." : placeholder
               }
-              className="w-full h-9 max-h-11 resize-none border-0 bg-transparent px-4 py-1 pr-12 text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:outline-none overflow-y-auto scrollbar-hide"
+              onKeyDown={handleKeyDown}
+              className="h-9 min-h-9 w-full max-h-28 resize-none border-0 bg-transparent px-3 py-2 pr-10 text-sm leading-5 text-slate-900 focus:outline-none dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 overflow-hidden scrollbar-hide"
               style={{
                 scrollbarWidth: "none",
                 msOverflowStyle: "none",
@@ -355,9 +378,10 @@ export function MessageInput({
             {/* Emoji Button */}
             <Button
               type="button"
+              aria-label="Open emoji picker"
               variant="ghost"
               size="icon"
-              className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-slate-500 dark:text-slate-400 rounded-full"
+              className="absolute right-1.5 top-1/2 h-7 w-7 -translate-y-1/2 rounded-full text-slate-500 transition-colors hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-700"
             >
               <Smile className="h-4 w-4" />
             </Button>
@@ -367,14 +391,12 @@ export function MessageInput({
         {/* {message ? ( */}
         <Button
           onClick={handleSend}
-          // disabled={!message.trim() && selectedFiles.length === 0}
+          disabled={!message.trim() && selectedFiles.length === 0}
+          aria-label="Send message"
           size="icon"
           className={cn(
-            "h-11 w-11 rounded-full shadow-lg transition-all duration-200 flex-shrink-0",
-            // message.trim() || selectedFiles.length > 0
-            // ?
-            "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:shadow-xl hover:scale-105 text-white"
-            // : "bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed"
+            "h-9 w-9 shrink-0 rounded-full shadow-lg transition-all duration-200",
+            "bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 hover:shadow-xl hover:scale-105",
           )}
         >
           <Send className="h-5 w-5" />

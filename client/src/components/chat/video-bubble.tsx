@@ -11,7 +11,10 @@ interface VideoBubbleProps {
 
 export default function VideoBubble({ message }: VideoBubbleProps) {
   const [selectedVideoIndex, setSelectedVideoIndex] = useState<number | null>(
-    null
+    null,
+  );
+  const [failedThumbnailUrls, setFailedThumbnailUrls] = useState<Set<string>>(
+    new Set(),
   );
 
   // if (
@@ -48,7 +51,7 @@ export default function VideoBubble({ message }: VideoBubbleProps) {
       }
       return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
     },
-    []
+    [],
   );
 
   const statusIcon = useMemo(() => {
@@ -75,10 +78,12 @@ export default function VideoBubble({ message }: VideoBubbleProps) {
   };
 
   const isValidVideoUrl = useCallback((url: string) => {
-    return (
+    return Boolean(
       url &&
       !url.includes("placeholder.svg") &&
-      (url.includes(".mp4") || url.includes(".webm") || url.includes(".mov"))
+      (url.startsWith("blob:") ||
+        url.startsWith("http://") ||
+        url.startsWith("https://")),
     );
   }, []);
 
@@ -107,7 +112,7 @@ export default function VideoBubble({ message }: VideoBubbleProps) {
         alert("Failed to download video");
       }
     },
-    [isValidVideoUrl]
+    [isValidVideoUrl],
   );
 
   const renderVideoThumbnail = useCallback(
@@ -121,6 +126,12 @@ export default function VideoBubble({ message }: VideoBubbleProps) {
         "thumbnail_url" in video &&
         typeof video.thumbnail_url === "string" &&
         video.thumbnail_url;
+      const thumbnailUrl =
+        typeof hasThumbnail === "string"
+          ? hasThumbnail.replace(/^http:/, "https:")
+          : "";
+      const showThumbnail =
+        Boolean(thumbnailUrl) && !failedThumbnailUrls.has(thumbnailUrl);
 
       return (
         <div
@@ -131,9 +142,9 @@ export default function VideoBubble({ message }: VideoBubbleProps) {
             backgroundColor: "#000",
           }}
         >
-          {hasThumbnail ? (
+          {showThumbnail ? (
             <img
-              src={video.thumbnail_url}
+              src={thumbnailUrl}
               alt={`Video ${index + 1}`}
               loading="lazy"
               className="w-full h-full object-cover"
@@ -142,7 +153,34 @@ export default function VideoBubble({ message }: VideoBubbleProps) {
                 display: "block",
               }}
               onError={(e) => {
-                e.currentTarget.style.display = "none";
+                const failedUrl = e.currentTarget.currentSrc || thumbnailUrl;
+                if (failedUrl) {
+                  setFailedThumbnailUrls((previous) => {
+                    const next = new Set(previous);
+                    next.add(failedUrl);
+                    return next;
+                  });
+                }
+              }}
+            />
+          ) : isValid && "url" in video ? (
+            <video
+              src={video.url}
+              muted
+              playsInline
+              autoPlay
+              loop
+              preload="auto"
+              aria-label={`Video ${index + 1} preview`}
+              className="pointer-events-none block h-full w-full object-cover"
+              onLoadedData={(event) => {
+                const videoElement = event.currentTarget;
+                if (videoElement.duration > 0) {
+                  videoElement.currentTime = Math.min(
+                    0.1,
+                    videoElement.duration,
+                  );
+                }
               }}
             />
           ) : (
@@ -157,7 +195,7 @@ export default function VideoBubble({ message }: VideoBubbleProps) {
           )}
 
           {/* Simplified play button overlay */}
-          {hasThumbnail && (
+          {(showThumbnail || isValid) && (
             <div
               className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-100 group-hover:bg-black/40"
               style={{ minHeight: "80px" }}
@@ -176,17 +214,17 @@ export default function VideoBubble({ message }: VideoBubbleProps) {
                   handleDownload(video, e);
                 }
               }}
-              className="absolute top-1 right-6 p-1 bg-black/60 rounded-full opacity-0 group-hover:opacity-100"
+              className="absolute right-11 top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/70 text-white shadow-md opacity-100 hover:bg-black/90"
               title="Download video"
             >
-              <Download className="h-2.5 w-2.5 text-white" />
+              <Download className="h-4 w-4 text-white" />
             </button>
           )}
 
           {/* Duration badge */}
           {(video as Media).duration &&
             typeof (video as Media).duration === "number" && (
-              <div className="absolute top-1 right-1 px-1 py-0.5 bg-black/80 rounded text-white">
+              <div className="absolute right-2 top-2 rounded bg-black/80 px-1.5 py-1 text-white">
                 <span className="text-xs font-medium leading-none">
                   {formatDuration((video as Media).duration ?? 0)}
                 </span>
@@ -200,7 +238,13 @@ export default function VideoBubble({ message }: VideoBubbleProps) {
         </div>
       );
     },
-    [openVideoViewer, isValidVideoUrl, handleDownload, formatDuration]
+    [
+      openVideoViewer,
+      isValidVideoUrl,
+      handleDownload,
+      formatDuration,
+      failedThumbnailUrls,
+    ],
   );
 
   const videoGrid = useMemo(() => {
@@ -278,10 +322,10 @@ export default function VideoBubble({ message }: VideoBubbleProps) {
         className={`flex ${is_sender ? "justify-end" : "justify-start"} mb-2`}
       >
         <div
-          className={`relative max-w-xs sm:max-w-sm md:max-w-md shadow-lg ${
+          className={`relative w-[min(82vw,24rem)] max-w-full rounded-2xl shadow-lg ${
             is_sender
-              ? "bg-gradient-to-br from-blue-500 to-blue-600 rounded-l-2xl rounded-br-2xl rounded-tr-md"
-              : "bg-white border border-gray-200 rounded-r-2xl rounded-bl-2xl rounded-tl-md"
+              ? "rounded-br-md bg-gradient-to-br from-blue-500 to-blue-600"
+              : "rounded-bl-md border border-gray-200 bg-white"
           }`}
         >
           {/* Videos */}

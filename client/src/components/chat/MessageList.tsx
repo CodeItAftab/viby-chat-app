@@ -1,7 +1,6 @@
 import { useGetMessagesQuery } from "@/store/api/viby";
 import type { Message } from "@/types/message";
-import React from "react";
-import { useCallback } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import AudioBubble from "./audio-bubble";
 import ImageBubble from "./image-bubble";
@@ -11,12 +10,111 @@ import TextBubble from "./text-bubble";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/store/types";
 
-const MessageList: React.FC = () => {
+interface MessageListProps {
+  initialUnreadCount?: number;
+}
+
+const MessageList: React.FC<MessageListProps> = ({
+  initialUnreadCount = 0,
+}) => {
   const chatId = useParams<{ chatId: string }>().chatId;
 
   const { isTyping } = useSelector((state: RootState) => state.app);
 
-  const { data: messages } = useGetMessagesQuery(chatId || "");
+  const { data: messages } = useGetMessagesQuery(chatId || "", {
+    skip: !chatId,
+    refetchOnMountOrArgChange: true,
+  });
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const initializedChatRef = useRef<string | undefined>(undefined);
+  const initialUnreadCountRef = useRef(0);
+  const previousUnreadCountRef = useRef(0);
+  const initialUnreadIdRef = useRef<string | null>(null);
+  const initialScrollPendingRef = useRef(false);
+  const shouldFollowRef = useRef(true);
+
+  if (initializedChatRef.current !== chatId) {
+    initializedChatRef.current = chatId;
+    initialUnreadCountRef.current = initialUnreadCount;
+    previousUnreadCountRef.current = initialUnreadCount;
+    initialUnreadIdRef.current = null;
+    initialScrollPendingRef.current = false;
+    shouldFollowRef.current = true;
+  }
+
+  if (initialUnreadCount > previousUnreadCountRef.current && messages) {
+    initialUnreadCountRef.current = initialUnreadCount;
+    previousUnreadCountRef.current = initialUnreadCount;
+    initialScrollPendingRef.current = true;
+  }
+
+  if (
+    !initialScrollPendingRef.current &&
+    messages &&
+    (messages.length > 0 || initialUnreadCountRef.current === 0)
+  ) {
+    const incomingMessages = messages.filter((message) => !message.is_sender);
+    const unreadMessages = initialUnreadCountRef.current
+      ? incomingMessages.slice(-initialUnreadCountRef.current)
+      : incomingMessages.filter((message) => message.state !== "read");
+
+    initialUnreadIdRef.current = unreadMessages.at(-1)?._id || null;
+    initialScrollPendingRef.current = true;
+  }
+
+  const handleScroll = () => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const distanceFromBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight;
+    shouldFollowRef.current = distanceFromBottom < 120;
+  };
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container || !messages || !initialScrollPendingRef.current) return;
+
+    const frame = requestAnimationFrame(() => {
+      const unreadId = initialUnreadIdRef.current;
+      const unreadElement = unreadId
+        ? container.querySelector<HTMLElement>(
+            `[data-message-id="${unreadId}"]`,
+          )
+        : null;
+
+      if (unreadElement) {
+        const containerRect = container.getBoundingClientRect();
+        const messageRect = unreadElement.getBoundingClientRect();
+        const messageTop =
+          messageRect.top - containerRect.top + container.scrollTop;
+        container.scrollTo({
+          top: Math.max(0, messageTop - container.clientHeight / 2),
+          behavior: "auto",
+        });
+      } else {
+        container.scrollTo({ top: container.scrollHeight, behavior: "auto" });
+      }
+
+      initialScrollPendingRef.current = false;
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [chatId, messages, initialUnreadCount]);
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container || !messages || initialScrollPendingRef.current) return;
+
+    const latestMessage = messages[messages.length - 1];
+    if (!shouldFollowRef.current && !latestMessage?.is_sender) return;
+
+    const frame = requestAnimationFrame(() => {
+      container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [messages?.length, isTyping]);
 
   const GroupMessagesByDate = useCallback((messages: Message[]) => {
     const groups: { [key: string]: Message[] } = {};
@@ -55,7 +153,7 @@ const MessageList: React.FC = () => {
 
       // Check if within the last 7 days (excluding today and yesterday)
       const daysAgo = Math.floor(
-        (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
+        (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24),
       );
 
       if (daysAgo < 7 && daysAgo > 1 && isSameYear) {
@@ -80,7 +178,11 @@ const MessageList: React.FC = () => {
   const messageGroups = GroupMessagesByDate([...(messages || [])]);
 
   return (
-    <div className="flex-1 overflow-y-auto bg-gradient-to-b from-white via-slate-50 to-blue-50 dark:from-slate-900 dark:via-slate-900 dark:to-blue-950">
+    <div
+      ref={scrollContainerRef}
+      onScroll={handleScroll}
+      className="min-h-0 flex-1 overflow-y-auto bg-gradient-to-b from-white via-slate-50 to-blue-50 scroll-smooth dark:from-slate-900 dark:via-slate-900 dark:to-blue-950"
+    >
       <div className="p-3 sm:p-6">
         {Object.entries(messageGroups).map(([dateString, dateMessages]) => (
           <div key={dateString} className="mb-6 flex flex-col">
@@ -96,44 +198,31 @@ const MessageList: React.FC = () => {
             {/* Messages for this date - Tighter grouping */}
             <div className="space-y-0 flex flex-col flex-grow">
               {dateMessages.map((message, index) => {
+                const messageId = message._id || `message-${index}`;
+                let messageContent: React.ReactNode;
+
                 switch (message.type) {
                   case "audio":
-                    return (
-                      <AudioBubble
-                        key={message._id || index}
-                        message={message}
-                      />
-                    );
+                    messageContent = <AudioBubble message={message} />;
+                    break;
                   case "image":
-                    return (
-                      <ImageBubble
-                        key={message._id || index}
-                        message={message}
-                      />
-                    );
+                    messageContent = <ImageBubble message={message} />;
+                    break;
                   case "video":
-                    return (
-                      <VideoBubble
-                        key={message._id || index}
-                        message={message}
-                      />
-                    );
-                  // Add cases for other message types as needed
+                    messageContent = <VideoBubble message={message} />;
+                    break;
                   case "file":
-                    return (
-                      <FileBubble
-                        key={message._id || index}
-                        message={message}
-                      />
-                    );
+                    messageContent = <FileBubble message={message} />;
+                    break;
                   default:
-                    return (
-                      <TextBubble
-                        key={message._id || index}
-                        message={message}
-                      />
-                    );
+                    messageContent = <TextBubble message={message} />;
                 }
+
+                return (
+                  <div key={messageId} data-message-id={messageId}>
+                    {messageContent}
+                  </div>
+                );
               })}
             </div>
           </div>

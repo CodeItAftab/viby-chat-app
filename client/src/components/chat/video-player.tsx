@@ -250,7 +250,7 @@ export default function VideoPlayer({
       // Update buffered progress
       if (videoRef.current.buffered.length > 0) {
         const bufferedEnd = videoRef.current.buffered.end(
-          videoRef.current.buffered.length - 1
+          videoRef.current.buffered.length - 1,
         );
         const duration = videoRef.current.duration;
         if (duration > 0) {
@@ -322,11 +322,9 @@ export default function VideoPlayer({
   };
 
   const handleDownload = async () => {
-    if (isDemoMode) return;
-
     try {
       const videoUrl = getVideoUrl(videos[currentIndex]);
-      if (!videoUrl) {
+      if (!videoUrl || isDemoMode) {
         setHasError(true);
         return;
       }
@@ -343,6 +341,18 @@ export default function VideoPlayer({
       window.URL.revokeObjectURL(downloadUrl);
     } catch (error) {
       console.error("Download failed:", error);
+      const videoUrl = getVideoUrl(videos[currentIndex]);
+      if (videoUrl) {
+        const link = document.createElement("a");
+        link.href = videoUrl;
+        link.download =
+          videos[currentIndex].name || `video-${currentIndex + 1}.mp4`;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
     }
   };
 
@@ -400,8 +410,8 @@ export default function VideoPlayer({
   const progressPercentage = isDemoMode
     ? (currentTime / (getVideoDuration(currentVideo) || 60)) * 100
     : duration > 0
-    ? (currentTime / duration) * 100
-    : 0;
+      ? (currentTime / duration) * 100
+      : 0;
 
   return (
     <div
@@ -413,24 +423,13 @@ export default function VideoPlayer({
       style={{ cursor: showControls ? "default" : "none" }}
     >
       {/* Header */}
-      <div
-        className={`absolute top-0 left-0 right-0 z-20 bg-gradient-to-b from-black/90 via-black/50 to-transparent transition-all duration-500 ease-out ${
-          showControls
-            ? "opacity-100 translate-y-0"
-            : "opacity-0 -translate-y-0"
-        }`}
-      >
+      <div className="absolute left-0 right-0 top-0 z-20 bg-gradient-to-b from-black/90 via-black/50 to-transparent">
         <div className="flex items-center justify-between p-4 sm:p-6">
           <div className="text-white flex-1 min-w-0">
             <div className="flex items-center space-x-2 sm:space-x-3">
               <span className="text-sm sm:text-lg font-semibold">
                 {currentIndex + 1} of {videos.length}
               </span>
-              {isDemoMode && (
-                <span className="px-2 py-1 sm:px-3 sm:py-1 bg-blue-600 rounded-full text-xs sm:text-sm font-medium animate-pulse">
-                  Demo
-                </span>
-              )}
             </div>
             <div className="text-xs sm:text-sm text-white/70 mt-1 truncate">
               {currentVideo.name || `Video ${currentIndex + 1}`}
@@ -438,17 +437,18 @@ export default function VideoPlayer({
           </div>
 
           <div className="flex items-center space-x-2 sm:space-x-3 ml-4">
-            {!isDemoMode && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDownload();
-                }}
-                className="p-2 sm:p-3 text-white hover:bg-white/20 rounded-full transition-all duration-300 bg-black/40 backdrop-blur-sm hover:scale-110 transform"
-              >
-                <Download className="h-4 w-4 sm:h-5 sm:w-5" />
-              </button>
-            )}
+            <button
+              type="button"
+              aria-label="Download video"
+              disabled={isDemoMode}
+              onClick={(e) => {
+                e.stopPropagation();
+                void handleDownload();
+              }}
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-black/60 text-white shadow-lg backdrop-blur-sm transition-all hover:scale-110 hover:bg-black/80 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Download className="h-5 w-5" />
+            </button>
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -668,7 +668,7 @@ export default function VideoPlayer({
               <span className="text-white text-sm sm:text-lg font-medium">
                 {formatTime(currentTime)} /{" "}
                 {formatTime(
-                  isDemoMode ? getVideoDuration(currentVideo) || 60 : duration
+                  isDemoMode ? getVideoDuration(currentVideo) || 60 : duration,
                 )}
               </span>
             </div>
