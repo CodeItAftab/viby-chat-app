@@ -18,7 +18,7 @@ router.use(
   fileUpload({
     useTempFiles: true,
     tempFileDir: "/tmp/",
-  })
+  }),
 );
 
 router.use("/user", isAuthenticated, userRoutes);
@@ -31,6 +31,15 @@ router.use("/notification", isAuthenticated, notificationRoutes);
 
 router.get("/", (req, res) => {
   res.json({ message: "Welcome to the server" });
+});
+
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "Server is healthy",
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+  });
 });
 
 router.use(errorMiddleware);
