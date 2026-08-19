@@ -1,6 +1,7 @@
 const express = require("express");
 const {
   login,
+  logout,
   register,
   sendOTP,
   verifyOTP,
@@ -19,12 +20,13 @@ const {
 const router = express.Router();
 
 router.post("/login", [EmailValidator(), PasswordValidator()], login);
+router.post("/logout", logout);
 
 router.post(
   "/register",
   // [NameValidator(), EmailValidator(), PasswordValidator()],
   register,
-  sendOTP
+  sendOTP,
 );
 
 router.post("/verify-otp", [OtpValidator()], verifyOTP);
@@ -34,7 +36,7 @@ router.post("/reset-password", [EmailValidator()], SendResetLink);
 router.post(
   "/change-password/:reset_token",
   [PasswordValidator(), PasswordMatchValidator()],
-  changePassword
+  changePassword,
 );
 
 router.get("/validate-token/:reset_token", validateToken);

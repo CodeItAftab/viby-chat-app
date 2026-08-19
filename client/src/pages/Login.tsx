@@ -25,13 +25,18 @@ const Login = () => {
   const [showError, setShowError] = React.useState(true);
   const [showNewPassword, setShowNewPassword] = React.useState(false);
 
+  React.useEffect(() => {
+    if (LoginError) {
+      setShowError(true);
+    }
+  }, [LoginError]);
+
   interface LoginFormInputs {
     email: string;
     password: string;
   }
 
   const onSubmit = async (data: LoginFormInputs): Promise<void> => {
-    setShowError(false);
     await Login(data);
   };
 

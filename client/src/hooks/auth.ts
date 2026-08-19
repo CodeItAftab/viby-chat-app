@@ -3,6 +3,8 @@ import { login, logout, setIsLoading } from "@/store/slices/auth";
 import { MULTIPART_POST, POST } from "@/lib/axios";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { persistor } from "@/store/store";
+import { clearClientSession } from "@/lib/session";
 import type {
   RootState,
   ApiResponse,
@@ -17,7 +19,7 @@ import type {
 
 export const useAuth = () => {
   const { isLoggedIn, user, isLoading } = useSelector(
-    (state: RootState) => state.auth
+    (state: RootState) => state.auth,
   );
   const [error, setError] = useState<string>("");
   const navigate = useNavigate();
@@ -41,7 +43,7 @@ export const useAuth = () => {
     try {
       setLoading(true);
       const res = (await POST("/auth/login", data)) as ApiResponse;
-      if (res.success) {
+      if (res?.success) {
         disptach(login({ user: res.user }));
         navigate("/", { replace: true });
         console.log(res);
@@ -55,6 +57,7 @@ export const useAuth = () => {
         console.log(message);
         setError(message);
       }
+      return { success: false, message };
     } finally {
       setLoading(false);
     }
@@ -70,11 +73,11 @@ export const useAuth = () => {
       setLoading(true);
       const res = (await POST("/auth/register", data)) as ApiResponse;
       console.log("SignUp response:", res);
-      if (res.success) {
+      if (res?.success) {
         return res;
       } else {
         // Handle case where request succeeds but success is false
-        const message = res.message || "Registration failed";
+        const message = res?.message || "Registration failed";
         setError(message);
         return { success: false, message };
       }
@@ -97,12 +100,15 @@ export const useAuth = () => {
       setError("");
       console.log(data);
       const res = (await POST("/auth/verify-otp", data)) as ApiResponse;
-      if (res.success) {
+      if (res?.success) {
         console.log(res);
         // Don't login immediately - let the registration flow complete first
         // disptach(login({ user: res.user }));
         return res;
       }
+      const message = res?.message || "OTP verification failed";
+      setError(message);
+      return { success: false, message };
     } catch (error) {
       console.log(error);
       const apiError = error as ApiError;
@@ -113,6 +119,7 @@ export const useAuth = () => {
         console.log(message);
         setError(message);
       }
+      return { success: false, message };
     } finally {
       setLoading(false);
     }
@@ -126,7 +133,7 @@ export const useAuth = () => {
 
       const res = (await MULTIPART_POST(
         "/user/update-profile",
-        data as FormData
+        data as FormData,
       )) as ApiResponse;
 
       console.log("useauth update profile response:", res);
@@ -162,6 +169,9 @@ export const useAuth = () => {
         console.log(res);
         return res;
       }
+      const message = res?.message || "Unable to send reset link";
+      setError(message);
+      return { success: false, message };
     } catch (error) {
       console.log(error);
       const apiError = error as ApiError;
@@ -172,6 +182,7 @@ export const useAuth = () => {
         console.log(message);
         setError(message);
       }
+      return { success: false, message };
     } finally {
       setLoading(false);
     }
@@ -182,13 +193,16 @@ export const useAuth = () => {
       setLoading(true);
       setError("");
       const res = (await POST(
-        `/auth/change-password/${token} `,
-        data
+        `/auth/change-password/${token}`,
+        data,
       )) as ApiResponse;
       if (res?.success) {
         console.log(res);
         return res;
       }
+      const message = res?.message || "Unable to reset password";
+      setError(message);
+      return { success: false, message };
     } catch (error) {
       console.log(error);
       const apiError = error as ApiError;
@@ -199,6 +213,7 @@ export const useAuth = () => {
         console.log(message);
         setError(message);
       }
+      return { success: false, message };
     } finally {
       setLoading(false);
     }
@@ -217,8 +232,16 @@ export const useAuth = () => {
     }
   };
 
-  const Logout = () => {
+  const Logout = async () => {
     disptach(logout());
+    clearClientSession();
+    await persistor.purge();
+
+    try {
+      await POST("/auth/logout", {});
+    } catch (error) {
+      console.warn("Server logout cleanup failed:", error);
+    }
   };
 
   return {

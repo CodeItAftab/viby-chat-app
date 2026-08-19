@@ -1,12 +1,4 @@
-import {
-  User,
-  Bell,
-  Shield,
-  HelpCircle,
-  LogOut,
-  Moon,
-  Sun,
-} from "lucide-react";
+import { User, Bell, LogOut, Moon, Sun, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
@@ -22,6 +14,8 @@ import { useTheme } from "@/hooks/use-theme";
 import { useEffect, useState } from "react";
 import type { User as ProfileUser } from "@/types";
 import { useNotification } from "@/hooks/notification";
+import { useAuth } from "@/hooks/auth";
+import { useNavigate } from "react-router-dom";
 
 interface MobileUserSheetProps {
   profileData: ProfileUser;
@@ -32,6 +26,8 @@ export function MobileUserSheet({
   profileData,
   onProfileClick,
 }: MobileUserSheetProps) {
+  const navigate = useNavigate();
+  const { Logout } = useAuth();
   const { theme, setTheme } = useTheme();
   const {
     isNotiificationEnabled,
@@ -40,6 +36,11 @@ export function MobileUserSheet({
   } = useNotification();
 
   const [notificationAllowed, setNotiificationAllowed] = useState(false);
+
+  const handleLogout = () => {
+    Logout();
+    navigate("/auth/login", { replace: true });
+  };
 
   const HandleNotificationChange = () => {
     if (notificationAllowed) {
@@ -77,7 +78,10 @@ export function MobileUserSheet({
           className="w-8 h-8 md:w-9 md:h-9 hover:bg-muted rounded-2xl transition-all duration-300"
         >
           <Avatar className="w-6 h-6 md:w-7 md:h-7 ring-2 ring-blue-500/25 shadow-lg">
-            <AvatarImage src="/placeholder.svg?height=28&width=28" />
+            <AvatarImage
+              src={profileData?.avatar || "/placeholder.svg?height=28&width=28"}
+              alt={profileData?.name || "Profile"}
+            />
             <AvatarFallback className="bg-gradient-to-br from-blue-500 to-cyan-500 text-white text-xs font-bold">
               {profileData?.name
                 .split(" ")
@@ -89,11 +93,11 @@ export function MobileUserSheet({
       </SheetTrigger>
       <SheetContent
         side="right"
-        className="w-80 p-0 bg-card/95 backdrop-blur-2xl border-border"
+        className="max-h-[100dvh] w-[min(22rem,calc(100vw-0.75rem))] max-w-full gap-0 overflow-hidden bg-card/95 p-0 backdrop-blur-2xl border-border"
       >
-        <SheetHeader className="p-6 pb-4 bg-muted/40 backdrop-blur-xl">
-          <div className="flex items-center space-x-4">
-            <Avatar className="w-16 h-16 ring-2 ring-blue-500/25 shadow-xl">
+        <SheetHeader className="shrink-0 bg-muted/40 p-5 pr-14 pb-4 backdrop-blur-xl sm:p-6 sm:pr-14 sm:pb-4">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+            <Avatar className="h-14 w-14 shrink-0 ring-2 ring-blue-500/25 shadow-xl sm:h-16 sm:w-16">
               <AvatarImage
                 src={
                   profileData?.avatar ?? "/placeholder.svg?height=64&width=64"
@@ -106,11 +110,11 @@ export function MobileUserSheet({
                   .join("")}
               </AvatarFallback>
             </Avatar>
-            <div>
-              <SheetTitle className="text-foreground text-lg tracking-tight">
+            <div className="min-w-0">
+              <SheetTitle className="truncate text-foreground text-lg tracking-tight">
                 {profileData?.name}
               </SheetTitle>
-              <p className="text-blue-500 dark:text-blue-400 text-sm mt-1">
+              <p className="mt-1 truncate text-blue-500 dark:text-blue-400 text-sm">
                 {profileData?.email}
               </p>
               <div className="flex items-center gap-2 mt-2">
@@ -124,7 +128,7 @@ export function MobileUserSheet({
           </div>
         </SheetHeader>
 
-        <div className="px-6 space-y-6 scrollbar-hide overflow-y-auto h-full pb-6">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] scrollbar-hide sm:px-6">
           <Separator className="bg-border" />
 
           {/* Profile Section */}
@@ -134,7 +138,7 @@ export function MobileUserSheet({
             </h3>
             <Button
               variant="ghost"
-              onClick={onProfileClick}
+              onClick={onProfileClick || (() => navigate("/profile"))}
               className="w-full justify-start text-left p-3 h-auto hover:bg-muted rounded-2xl text-muted-foreground hover:text-foreground transition-all duration-300"
             >
               <User className="w-5 h-5 mr-3 text-blue-500 dark:text-blue-400" />
@@ -156,6 +160,20 @@ export function MobileUserSheet({
             </h3>
 
             <div className="space-y-3">
+              <Button
+                variant="ghost"
+                onClick={() => navigate("/settings")}
+                className="w-full justify-start text-left p-3 h-auto hover:bg-muted rounded-2xl text-muted-foreground hover:text-foreground transition-all duration-300"
+              >
+                <Settings className="w-5 h-5 mr-3 text-blue-500 dark:text-blue-400" />
+                <div>
+                  <p className="text-sm font-medium">App settings</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Manage your preferences
+                  </p>
+                </div>
+              </Button>
+
               <div className="flex items-center justify-between p-3 rounded-2xl hover:bg-muted transition-all duration-300">
                 <div className="flex items-center">
                   <Bell className="w-5 h-5 mr-3 text-blue-500 dark:text-blue-400" />
@@ -195,32 +213,6 @@ export function MobileUserSheet({
                   }
                 />
               </div>
-
-              <Button
-                variant="ghost"
-                className="w-full justify-start text-left p-3 h-auto hover:bg-muted rounded-2xl text-muted-foreground hover:text-foreground transition-all duration-300"
-              >
-                <Shield className="w-5 h-5 mr-3 text-blue-500 dark:text-blue-400" />
-                <div>
-                  <p className="text-sm font-medium">Privacy & Security</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Manage your privacy settings
-                  </p>
-                </div>
-              </Button>
-
-              <Button
-                variant="ghost"
-                className="w-full justify-start text-left p-3 h-auto hover:bg-muted rounded-2xl text-muted-foreground hover:text-foreground transition-all duration-300"
-              >
-                <HelpCircle className="w-5 h-5 mr-3 text-blue-500 dark:text-blue-400" />
-                <div>
-                  <p className="text-sm font-medium">Help & Support</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Get help and contact support
-                  </p>
-                </div>
-              </Button>
             </div>
           </div>
 
@@ -229,7 +221,8 @@ export function MobileUserSheet({
           {/* Sign Out */}
           <Button
             variant="ghost"
-            className="w-full justify-start text-left p-3 h-auto text-red-500 hover:text-red-400 hover:bg-red-500/10 rounded-2xl transition-all duration-300"
+            onClick={handleLogout}
+            className="w-full justify-start mb-1  text-left p-3 h-auto text-red-500 hover:text-red-400 hover:bg-red-500/10 rounded-2xl transition-all duration-300"
           >
             <LogOut className="w-5 h-5 mr-3" />
             <div>

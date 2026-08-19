@@ -1,5 +1,6 @@
 import { AuthInitialState } from "@/constants/store";
 import { createSlice } from "@reduxjs/toolkit";
+import { REHYDRATE } from "redux-persist";
 
 export const slice = createSlice({
   name: "auth",
@@ -11,6 +12,7 @@ export const slice = createSlice({
     },
     logout(state) {
       state.isLoggedIn = false;
+      state.isLoading = false;
       state.user = {
         _id: "",
         name: "",
@@ -25,6 +27,11 @@ export const slice = createSlice({
     setIsLoading(state, action) {
       state.isLoading = action.payload;
     },
+  },
+  extraReducers: (builder) => {
+    builder.addCase(REHYDRATE, (state) => {
+      state.isLoading = false;
+    });
   },
 });
 

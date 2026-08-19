@@ -19,10 +19,10 @@ const server = http.createServer(app);
 // Middleware
 app.use(
   cors({
-    origin: "https://viby-chat-app.vercel.app",
+    origin: CLIENT_URL,
     methods: ["GET,HEAD,PUT,PATCH,POST,DELETE"],
     credentials: true,
-  })
+  }),
 );
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));

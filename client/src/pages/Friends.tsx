@@ -3,11 +3,18 @@ import { EmptyState } from "@/components/empty-state";
 import { FriendListItem } from "@/components/friend/friend-list-item";
 import { useGetFriendsQuery } from "@/store/api/viby";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 export default function FriendsPage() {
   const { data: friends, isLoading, error } = useGetFriendsQuery();
-  console.log("Friends data:", friends);
   const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
+  const normalizedSearch = searchQuery.trim().toLowerCase();
+  const visibleFriends = (friends ?? []).filter((friend) =>
+    [friend.name, friend.username, friend.email]
+      .filter(Boolean)
+      .some((value) => value!.toLowerCase().includes(normalizedSearch)),
+  );
 
   return (
     <>
@@ -17,8 +24,8 @@ export default function FriendsPage() {
         <ChatListHeader
           title="Friends"
           activeSection="friends"
-          searchQuery=""
-          onSearchChange={() => {}}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
           showNotifications={false}
           profileData={{
             name: "User",
@@ -45,7 +52,7 @@ export default function FriendsPage() {
               <div className="text-muted-foreground">No friends yet</div>
             </div>
           ) : (
-            friends.map((friend) => (
+            visibleFriends.map((friend) => (
               <FriendListItem
                 key={friend._id}
                 friend={friend}
@@ -58,7 +65,7 @@ export default function FriendsPage() {
       </div>
 
       <div className="flex-1 flex flex-col max-lg:hidden">
-        <EmptyState activeSection="chats" />
+        <EmptyState activeSection="friends" />
       </div>
     </>
   );

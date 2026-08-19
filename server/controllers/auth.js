@@ -7,6 +7,7 @@ const {
   GenerateResetLink,
   decodeToken,
   GenerateUniqueUsername,
+  cookieOptions,
 } = require("../lib/helper");
 const { hashSync } = require("bcryptjs");
 const User = require("../models/user");
@@ -40,6 +41,15 @@ const login = TryCatch(async (req, res, next) => {
   };
 
   return sendToken(res, resUser, 200, "Logged in successfully");
+});
+
+const logout = TryCatch(async (req, res) => {
+  const { maxAge, ...clearCookieOptions } = cookieOptions;
+  res.clearCookie("viby-token", clearCookieOptions);
+  return res.status(200).json({
+    success: true,
+    message: "Logged out successfully",
+  });
 });
 
 const register = TryCatch(async (req, res, next) => {
@@ -98,7 +108,7 @@ const sendOTP = TryCatch(async (req, res, next) => {
   } catch (error) {
     throw new ErrorHandler(
       500,
-      "Something went wrong, Please try again later."
+      "Something went wrong, Please try again later.",
     );
   }
 
@@ -152,7 +162,7 @@ const SendResetLink = TryCatch(async (req, res, next) => {
   if (!email)
     return new ErrorHandler(
       400,
-      "Email is required to send reset password link"
+      "Email is required to send reset password link",
     );
 
   const user = await User.findOne({ email });
@@ -176,7 +186,7 @@ const SendResetLink = TryCatch(async (req, res, next) => {
   } catch (error) {
     throw new ErrorHandler(
       500,
-      "Something went wrong, Please try again later."
+      "Something went wrong, Please try again later.",
     );
   }
 
@@ -199,7 +209,7 @@ const changePassword = TryCatch(async (req, res, next) => {
   if (!user)
     return new ErrorHandler(
       404,
-      "Invalid token or link expired, try sending link again"
+      "Invalid token or link expired, try sending link again",
     );
 
   user.password = password;
@@ -231,7 +241,7 @@ const validateToken = TryCatch(async (req, res, next) => {
   if (!user) {
     return new ErrorHandler(
       404,
-      "Invalid token or link expired, try sending link again"
+      "Invalid token or link expired, try sending link again",
     );
   }
 
@@ -243,6 +253,7 @@ const validateToken = TryCatch(async (req, res, next) => {
 
 module.exports = {
   login,
+  logout,
   register,
   sendOTP,
   verifyOTP,

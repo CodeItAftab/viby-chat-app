@@ -1,4 +1,10 @@
-import { MessageCircle, Users, Phone, Search, UserCheck } from "lucide-react";
+import {
+  MessageCircle,
+  Users,
+  //  Phone,
+  Search,
+  UserCheck,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NavLink, useParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -13,7 +19,6 @@ const bottomNavItems = [
   { icon: Users, label: "Friends", key: "friends", href: "/friends" },
   { icon: Search, label: "Discover", key: "discover", href: "/discover" },
   { icon: UserCheck, label: "Requests", key: "requests", href: "/requests" },
-  { icon: Phone, label: "Calls", key: "calls", href: "/calls" },
 ];
 
 export function MobileBottomNav({
@@ -25,11 +30,11 @@ export function MobileBottomNav({
   return (
     <div
       className={cn(
-        "lg:hidden fixed bottom-0 left-0 right-0 bg-card/90 backdrop-blur-2xl border-t border-border px-2 md:px-4 py-2 safe-area-pb",
-        chatId && "max-lg:hidden"
+        "lg:hidden fixed inset-x-0 bottom-0 z-50 min-h-16 bg-card/95 backdrop-blur-2xl border-t border-border px-2 pb-[env(safe-area-inset-bottom)] pt-1 md:px-4",
+        chatId && "max-lg:hidden",
       )}
     >
-      <div className="flex items-center justify-around">
+      <div className="flex min-h-14 items-center justify-around">
         {bottomNavItems.map((item, index) => (
           <NavLink key={index} to={item?.href || "#"}>
             {({ isActive }) => (

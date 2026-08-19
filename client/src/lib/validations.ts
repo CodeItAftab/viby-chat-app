@@ -37,7 +37,7 @@ export const profileSchema = z.object({
         const age = today.getFullYear() - birthDate.getFullYear();
         return age >= 13 && age <= 120;
       },
-      { message: "You must be between 13 and 120 years old" }
+      { message: "You must be between 13 and 120 years old" },
     )
     .optional()
     .or(z.literal("")),
@@ -57,7 +57,7 @@ export const resetPasswordSchema = z
       .max(100, "New password must be less than 100 characters")
       .regex(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-        "New password must contain at least one uppercase letter, one lowercase letter, and one number"
+        "New password must contain at least one uppercase letter, one lowercase letter, and one number",
       )
       .regex(/[^a-zA-Z0-9]/, {
         message: "Password must contain at least one special character",
@@ -70,7 +70,7 @@ export const resetPasswordSchema = z
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",
-    path: ["confirmNewPassword"],
+    path: ["confirmPassword"],
   });
 
 export const forgotPasswordSchema = z.object({

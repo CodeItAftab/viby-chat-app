@@ -1,5 +1,6 @@
-import { UserCheck, Send } from "lucide-react";
+import { Search, UserCheck, Send } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { ReceivedRequestCard } from "@/components/request/received-request-card";
 import { SentRequestCard } from "@/components/request/sent-request-card";
 // import type { FriendRequest } from "@/types";
@@ -11,9 +12,21 @@ import {
 
 export default function RequestsPage() {
   const [activeTab, setActiveTab] = useState<"received" | "sent">("received");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { data: receivedRequests = [] } = useGetReceivedRequestsQuery();
   const { data: sentRequests = [] } = useGetSentRequestsQuery();
+  const normalizedSearch = searchQuery.trim().toLowerCase();
+  const visibleReceivedRequests = receivedRequests.filter((request) =>
+    [request.sender?.name, request.sender?.username]
+      .filter(Boolean)
+      .some((value) => value!.toLowerCase().includes(normalizedSearch)),
+  );
+  const visibleSentRequests = sentRequests.filter((request) =>
+    [request.receiver?.name, request.receiver?.username]
+      .filter(Boolean)
+      .some((value) => value!.toLowerCase().includes(normalizedSearch)),
+  );
 
   const onTabChange = (tab: "received" | "sent") => {
     setActiveTab(tab);
@@ -34,6 +47,15 @@ export default function RequestsPage() {
                   Manage your friend requests
                 </p>
               </div>
+            </div>
+            <div className="relative mb-6">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+              <Input
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search requests..."
+                className="h-11 rounded-xl border-slate-200 bg-white/70 pl-10 dark:border-slate-700 dark:bg-slate-900/50"
+              />
             </div>
 
             {/* Stats/Tab Cards */}
@@ -135,44 +157,48 @@ export default function RequestsPage() {
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="min-h-0 flex-1 overflow-y-auto pb-20 lg:pb-0">
             <div className="p-4 sm:p-5 lg:p-6">
               <div className="space-y-2.5 max-w-2xl mx-auto">
                 {activeTab === "received" ? (
-                  receivedRequests.length === 0 ? (
+                  visibleReceivedRequests.length === 0 ? (
                     <div className="text-center py-8">
                       <div className="w-14 h-14 bg-gradient-to-br from-emerald-100 to-green-100 dark:from-emerald-900/30 dark:to-green-900/20 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-emerald-200/60 dark:border-emerald-700/60">
                         <UserCheck className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
                       </div>
                       <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-2">
-                        No friend requests
+                        {searchQuery
+                          ? "No matching requests"
+                          : "No friend requests"}
                       </h3>
                       <p className="text-slate-600 dark:text-slate-400 text-sm">
                         You don't have any pending friend requests.
                       </p>
                     </div>
                   ) : (
-                    receivedRequests.map((request) => (
+                    visibleReceivedRequests.map((request) => (
                       <ReceivedRequestCard
                         key={request._id}
                         request={request}
                       />
                     ))
                   )
-                ) : sentRequests.length === 0 ? (
+                ) : visibleSentRequests.length === 0 ? (
                   <div className="text-center py-8">
                     <div className="w-14 h-14 bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/20 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-amber-200/60 dark:border-amber-700/60">
                       <Send className="w-8 h-8 text-amber-600 dark:text-amber-400" />
                     </div>
                     <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-2">
-                      No sent requests
+                      {searchQuery
+                        ? "No matching requests"
+                        : "No sent requests"}
                     </h3>
                     <p className="text-slate-600 dark:text-slate-400 text-sm">
                       You haven't sent any friend requests yet.
                     </p>
                   </div>
                 ) : (
-                  sentRequests.map((request) => (
+                  visibleSentRequests.map((request) => (
                     <SentRequestCard key={request._id} request={request} />
                   ))
                 )}

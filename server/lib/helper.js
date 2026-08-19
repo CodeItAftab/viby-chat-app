@@ -9,11 +9,13 @@ const { nanoid } = require("nanoid");
 const { getIO, GetSocketIds } = require("./socket");
 const { SocketEvents } = require("../constants/event");
 
+const isProduction = process.env.NODE_ENV === "production";
+
 const cookieOptions = {
   maxAge: 15 * 24 * 60 * 60 * 1000,
-  sameSite: "none",
+  sameSite: isProduction ? "none" : "lax",
   httpOnly: true,
-  secure: true,
+  secure: isProduction,
 };
 
 const GenerateToken = (payload) => {
@@ -171,14 +173,14 @@ const GetUnreadMessagesCount = async (userId, chatId) => {
 const IsMessageReadByUser = (message, userId) => {
   if (!message || !message.read_list) return false;
   return message.read_list.some(
-    (user) => user.toString() === userId.toString()
+    (user) => user.toString() === userId.toString(),
   );
 };
 
 const IsMessageDeliveredToUser = (message, userId) => {
   if (!message || !message.delivered_list) return false;
   return message.delivered_list.some(
-    (user) => user.toString() === userId.toString()
+    (user) => user.toString() === userId.toString(),
   );
 };
 
@@ -250,4 +252,5 @@ module.exports = {
   IsMessageReadByAllUsers,
   IsMessageDeliveredToAllUsers,
   SendSocketNotification,
+  cookieOptions,
 };

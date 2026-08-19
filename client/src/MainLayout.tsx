@@ -10,7 +10,7 @@ const MainLayout = () => {
     <NotificationProvider>
       <div
         className={cn(
-          "flex h-screen bg-background text-foreground overflow-hidden"
+          "flex min-h-screen h-[100dvh] min-w-0 bg-background text-foreground overflow-hidden",
           // GeistSans.className
         )}
       >

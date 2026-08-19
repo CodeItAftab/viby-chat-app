@@ -56,7 +56,7 @@ const ResetPassword = () => {
     handleSubmit,
     watch,
     reset,
-    formState: { errors, isValid },
+    formState: { errors },
   } = useForm<ResetPasswordData>({
     resolver: zodResolver(resetPasswordSchema),
     defaultValues: {
@@ -70,7 +70,7 @@ const ResetPassword = () => {
     const validateToken = async () => {
       try {
         const res = (await GET(
-          `/auth/validate-token/${token}`
+          `/auth/validate-token/${token}`,
         )) as TokenValidationResponse;
         if (res.success) {
           setTokenValid(true);
@@ -87,6 +87,12 @@ const ResetPassword = () => {
       validateToken();
     }
   }, [token]);
+
+  useEffect(() => {
+    if (ServerError) {
+      setSubmitStatus("error");
+    }
+  }, [ServerError]);
 
   const getPasswordStrength = (password: string) => {
     if (!password) return { strength: 0, label: "", color: "" };
@@ -124,10 +130,6 @@ const ResetPassword = () => {
     }
   };
 
-  if (ServerError) {
-    setSubmitStatus("error");
-  }
-
   if (!tokenValid) {
     return <InvalidTokenMessage />;
   }
@@ -139,7 +141,7 @@ const ResetPassword = () => {
       <div className="flex flex-col items-center sm:w-[480px] w-screen  justify-center lg:py-0 py-10 col-span-3 bg-white/50 rounded-4xl ">
         <Card
           className={cn(
-            "w-full mx-auto shadow-none rounded-4xl bg-white/50 border-none"
+            "w-full mx-auto shadow-none rounded-4xl bg-white/50 border-none",
           )}
         >
           <CardHeader className="text-center w-full">
@@ -212,7 +214,7 @@ const ResetPassword = () => {
                     placeholder="Enter your new password"
                     className={cn(
                       "h-11 pr-10 border-gray-200 dark:border-gray-800 focus:border-gray-900 dark:focus:border-gray-100",
-                      errors.password && "border-red-500 focus:border-red-500"
+                      errors.password && "border-red-500 focus:border-red-500",
                     )}
                     disabled={isLoading}
                     {...register("password")}
@@ -239,7 +241,7 @@ const ResetPassword = () => {
                       <span
                         className={cn(
                           "text-xs font-medium",
-                          passwordStrength.color
+                          passwordStrength.color,
                         )}
                       >
                         {passwordStrength.label}
@@ -252,7 +254,7 @@ const ResetPassword = () => {
                           passwordStrength.strength <= 2 && "bg-red-500",
                           passwordStrength.strength === 3 && "bg-yellow-500",
                           passwordStrength.strength === 4 && "bg-blue-500",
-                          passwordStrength.strength === 5 && "bg-green-500"
+                          passwordStrength.strength === 5 && "bg-green-500",
                         )}
                         style={{
                           width: `${(passwordStrength.strength / 5) * 100}%`,
@@ -283,7 +285,7 @@ const ResetPassword = () => {
                     className={cn(
                       "h-11 pr-10 border-gray-200 dark:border-gray-800 focus:border-gray-900 dark:focus:border-gray-100",
                       errors.confirmPassword &&
-                        "border-red-500 focus:border-red-500"
+                        "border-red-500 focus:border-red-500",
                     )}
                     disabled={isLoading}
                     {...register("confirmPassword")}
@@ -325,7 +327,7 @@ const ResetPassword = () => {
               <Button
                 type="submit"
                 className="w-full h-11 bg-gray-900 hover:bg-gray-800 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100 font-medium transition-colors"
-                disabled={isLoading || !isValid || submitStatus === "success"}
+                disabled={isLoading || submitStatus === "success"}
               >
                 {isLoading ? (
                   <>

@@ -12,7 +12,8 @@ import ForgotPassword from "@/pages/ForgotPassword";
 import { NotFound } from "@/pages/NotFound";
 import ResetPassword from "@/pages/ResetPassword";
 import MessagePage from "@/pages/MessagePage";
-import Call from "@/pages/Call";
+import Profile from "@/pages/Profile";
+import Settings from "@/pages/Settings";
 import SocketProvider from "@/provider/SocketProvider";
 
 const router = createBrowserRouter([
@@ -73,26 +74,18 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings",
+        path: "profile",
         element: (
           <ProtectedRoute>
-            <div className="p-4 sm:p-6 lg:p-8">
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">
-                Settings
-              </h1>
-              <p className="mt-2 text-gray-600 dark:text-gray-400">
-                Manage your account settings here.
-              </p>
-            </div>
+            <Profile />
           </ProtectedRoute>
         ),
       },
-
       {
-        path: "calls",
+        path: "settings",
         element: (
           <ProtectedRoute>
-            <Call />
+            <Settings />
           </ProtectedRoute>
         ),
       },

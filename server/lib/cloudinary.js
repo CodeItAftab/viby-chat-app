@@ -35,6 +35,7 @@ const generateVideoThumbnail = (publicId) => {
   return cloudinary.url(publicId, {
     resource_type: "video",
     format: "jpg",
+    secure: true,
     transformation: [
       { width: 400, height: 300, crop: "fill" },
       { start_offset: "2" }, // Get thumbnail from 2 seconds into the video

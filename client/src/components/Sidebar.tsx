@@ -1,7 +1,14 @@
-import { MessageCircle, Users, Phone, Search, UserCheck } from "lucide-react";
+import {
+  LogOut,
+  MessageCircle,
+  Users,
+  Search,
+  UserCheck,
+  Settings as SettingsIcon,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/auth";
 
 const sidebarItems = [
@@ -9,19 +16,30 @@ const sidebarItems = [
   { icon: Users, label: "Friends", key: "friends", href: "/friends" },
   { icon: Search, label: "Discover", key: "discover", href: "/discover" },
   { icon: UserCheck, label: "Requests", key: "requests", href: "/requests" },
-  { icon: Phone, label: "Calls", key: "calls", href: "/calls" },
 ];
 
 export function Sidebar() {
-  const { user } = useAuth();
+  const { user, Logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    Logout();
+    navigate("/auth/login", { replace: true });
+  };
 
   return (
-    <div className="hidden lg:flex lg:w-16 lg:flex-col lg:bg-card/40 lg:border-r lg:border-border lg:backdrop-blur-xl">
+    <div className="hidden lg:flex lg:w-16 lg:shrink-0 lg:flex-col lg:bg-card/40 lg:border-r lg:border-border lg:backdrop-blur-xl">
       <div className="flex flex-col items-center py-6 space-y-3">
-        {/* Logo */}
-        <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-2xl flex items-center justify-center mb-8 shadow-xl shadow-blue-500/25">
+        <Button
+          variant="ghost"
+          size="icon"
+          title="Go to chats"
+          aria-label="Go to chats"
+          onClick={() => navigate("/chat")}
+          className="w-10 h-10 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-2xl flex items-center justify-center mb-8 shadow-xl shadow-blue-500/25 hover:opacity-90"
+        >
           <MessageCircle className="w-5 h-5 text-white" />
-        </div>
+        </Button>
 
         {/* Navigation Items */}
         {sidebarItems.map((item, index) => (
@@ -30,6 +48,8 @@ export function Sidebar() {
               <Button
                 variant="ghost"
                 size="icon"
+                title={item.label}
+                aria-label={item.label}
                 className={`w-10 h-10 rounded-2xl transition-all cursor-pointer duration-300 ${
                   isActive
                     ? "bg-gradient-to-br from-blue-600/25 to-cyan-600/25 text-foreground shadow-lg shadow-blue-500/20 border border-blue-500/30"
@@ -44,17 +64,14 @@ export function Sidebar() {
       </div>
 
       {/* User Avatar at Bottom */}
-      <div className="mt-auto p-4">
+      <div className="mt-auto flex flex-col items-center gap-2 p-3">
         <Button
+          onClick={() => navigate("/profile")}
+          title="Open profile"
+          aria-label="Open profile"
           variant="ghost"
           size="icon"
-          // onClick={onSettingsClick}
-          className={`w-10 h-10 rounded-2xl transition-all duration-300 ${
-            // showSettings
-            // ?
-            "bg-gradient-to-br from-blue-600/25 to-cyan-600/25 shadow-lg shadow-blue-500/20 border border-blue-500/30"
-            // : "hover:bg-muted"
-          }`}
+          className="w-10 h-10 rounded-2xl transition-all duration-300 hover:bg-muted"
         >
           <Avatar className="w-8 h-8 ring-2 ring-primary/25 shadow-lg">
             <AvatarImage
@@ -67,6 +84,26 @@ export function Sidebar() {
                 .join("")}
             </AvatarFallback>
           </Avatar>
+        </Button>
+        <Button
+          onClick={handleLogout}
+          title="Log out"
+          aria-label="Log out"
+          variant="ghost"
+          size="icon"
+          className="w-10 h-10 rounded-2xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+        >
+          <LogOut className="h-5 w-5" />
+        </Button>
+        <Button
+          onClick={() => navigate("/settings")}
+          title="Open settings"
+          aria-label="Open settings"
+          variant="ghost"
+          size="icon"
+          className="w-10 h-10 rounded-2xl text-muted-foreground hover:bg-muted hover:text-foreground"
+        >
+          <SettingsIcon className="h-5 w-5" />
         </Button>
       </div>
     </div>
