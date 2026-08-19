@@ -11,6 +11,10 @@ const transporter = nodemailer.createTransport({
     user: APP_EMAIL,
     pass: GOOGLE_APP_PASSWORD,
   },
+  family: 4,
+  connectionTimeout: 10000,
+  greetingTimeout: 10000,
+  socketTimeout: 10000,
 });
 
 const SendMail = (mailOptions) => {
