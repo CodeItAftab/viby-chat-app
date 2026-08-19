@@ -33,7 +33,7 @@ router.get("/", (req, res) => {
   res.json({ message: "Welcome to the server" });
 });
 
-app.get("/health", (req, res) => {
+router.get("/health", (req, res) => {
   res.status(200).json({
     success: true,
     message: "Server is healthy",
