@@ -31,6 +31,7 @@ export default function Register() {
     avatar?: File;
   } | null>(null);
   const [userData, setUserData] = useState<object | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const {
     SignUp,
@@ -38,7 +39,7 @@ export default function Register() {
     UpdateProfile,
     CompleteRegistration,
     error: serverError,
-    isLoading,
+    // isLoading,
   } = useAuth();
 
   const handleRegistrationSubmit = async (data: {
@@ -46,11 +47,13 @@ export default function Register() {
     email: string;
     password: string;
   }) => {
+    setIsLoading(true);
     const res = await SignUp(data);
     if (res?.success) {
       setRegistrationData(data);
       setCurrentStep(2);
     }
+    setIsLoading(false);
   };
 
   // const handleRegistrationSubmit = async (data: {
@@ -83,11 +86,13 @@ export default function Register() {
   // };
 
   const handleVerifyOtp = async (otp: string) => {
+    setIsLoading(true);
     const res = await VerifyOTP({ otp, email: registrationData.email });
     if (res?.success) {
       setCurrentStep(3);
       localStorage.setItem("registrationStep", "3");
     }
+    setIsLoading(false);
   };
 
   const handleResendOtp = async () => {
@@ -108,6 +113,7 @@ export default function Register() {
     avatar?: File;
   }) => {
     try {
+      setIsLoading(true);
       const res = await UpdateProfile(data);
       console.log(res);
       if (res?.success) {
@@ -116,9 +122,11 @@ export default function Register() {
           setUserData(res.user); // Store user data for later login
         }
         setCurrentStep(4);
+        setIsLoading(false);
       }
     } catch (error) {
       console.log(error);
+      setIsLoading(false);
     }
   };
 
@@ -188,7 +196,7 @@ export default function Register() {
     const names = registrationData.name.split(" ");
     if (names.length >= 2) {
       return `${names[0].charAt(0)}${names[names.length - 1].charAt(
-        0
+        0,
       )}`.toUpperCase();
     }
     return registrationData.name.charAt(0).toUpperCase();
@@ -229,7 +237,7 @@ export default function Register() {
       <div
         className={cn(
           "h-full  w-full bg-white flex items-center justify-center p-4 pt-10",
-          serverError && "pt-16"
+          serverError && "pt-16",
         )}
       >
         <div className="w-full h-full max-w-md">
