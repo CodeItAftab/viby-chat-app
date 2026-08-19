@@ -219,17 +219,12 @@ export const useAuth = () => {
     }
   };
 
-  const CompleteRegistration = async (userData: object) => {
-    try {
-      setLoading(true);
-      // Login the user with the stored user data
-      disptach(login({ user: userData }));
-      navigate("/", { replace: true });
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setLoading(false);
-    }
+  const CompleteRegistration = (userData: object) => {
+    console.log("COMPLETING REGISTRATION:", userData);
+
+    disptach(login({ user: userData }));
+
+    navigate("/", { replace: true });
   };
 
   const Logout = async () => {

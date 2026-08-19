@@ -87,12 +87,24 @@ export default function Register() {
 
   const handleVerifyOtp = async (otp: string) => {
     setIsLoading(true);
-    const res = await VerifyOTP({ otp, email: registrationData.email });
-    if (res?.success) {
-      setCurrentStep(3);
-      localStorage.setItem("registrationStep", "3");
+
+    try {
+      const res = await VerifyOTP({
+        otp,
+        email: registrationData.email,
+      });
+
+      console.log("OTP RESPONSE:", res);
+
+      if (res?.success) {
+        // Save user returned from backend
+        setUserData(res.user!);
+
+        setCurrentStep(3);
+      }
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const handleResendOtp = async () => {
@@ -114,18 +126,25 @@ export default function Register() {
   }) => {
     try {
       setIsLoading(true);
+
       const res = await UpdateProfile(data);
-      console.log(res);
+
+      console.log("PROFILE RESPONSE:", res);
+
       if (res?.success) {
         setProfileData(data);
-        if (res.user) {
-          setUserData(res.user); // Store user data for later login
+
+        // If update-profile returns updated user, use it.
+        // Otherwise keep the user we saved during OTP verification.
+        if (res?.user) {
+          setUserData(res.user);
         }
+
         setCurrentStep(4);
-        setIsLoading(false);
       }
     } catch (error) {
-      console.log(error);
+      console.error("Profile update failed:", error);
+    } finally {
       setIsLoading(false);
     }
   };
@@ -174,18 +193,17 @@ export default function Register() {
   //   });
   // };
 
-  const handleGetStarted = async () => {
-    console.log("User completed registration:", {
-      registrationData,
-      profileData,
-    });
+  const handleGetStarted = () => {
+    console.log("GET STARTED");
+    console.log("USER DATA:", userData);
 
-    // Login the user and redirect to home
-    if (userData) {
-      await CompleteRegistration(userData);
+    if (!userData) {
+      console.error("User data is missing");
+      return;
     }
 
-    // Clean up
+    CompleteRegistration(userData);
+
     localStorage.removeItem("registrationStep");
     localStorage.removeItem("registrationData");
     localStorage.removeItem("profileData");
