@@ -87,7 +87,7 @@ const sendOTP = TryCatch(async (req, res, next) => {
   const otp = GenerateOTP(6);
 
   //   todo: delete the console.log(otp)
-  console.log(otp);
+  // console.log(otp);
 
   const hashed_otp = hashSync(otp, 10);
 
@@ -106,6 +106,10 @@ const sendOTP = TryCatch(async (req, res, next) => {
   try {
     await SendOtpMail(user.email, otp);
   } catch (error) {
+    console.error(
+      "SendOTP error:",
+      JSON.stringify(error?.response?.body, null, 2),
+    );
     throw new ErrorHandler(
       500,
       "Something went wrong, Please try again later.",

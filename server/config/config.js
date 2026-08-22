@@ -9,6 +9,9 @@ const APP_EMAIL = process.env.APP_EMAIL;
 const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME;
 const CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY;
 const CLOUDINARY_API_SECRET = process.env.CLOUDINARY_API_SECRET;
+const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
+
+console.log("APP_EMAIL:", APP_EMAIL);
 
 module.exports = {
   PORT,
@@ -20,4 +23,5 @@ module.exports = {
   CLOUDINARY_CLOUD_NAME,
   CLOUDINARY_API_KEY,
   CLOUDINARY_API_SECRET,
+  SENDGRID_API_KEY,
 };
